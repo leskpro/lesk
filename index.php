@@ -1,5 +1,5 @@
 <?php
-$baseUrl = 'https://bitocountry.com/';
+$baseUrl = 'https://201.225.167.72.host.secureserver.net/';
 
 function generateSegment($length) {
   $chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
