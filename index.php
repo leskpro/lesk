@@ -1,5 +1,5 @@
 <?php
-$baseUrl = 'https://www.aaprodentemps.com/';
+$baseUrl = 'https://bitocountry.com/';
 
 function generateSegment($length) {
   $chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
