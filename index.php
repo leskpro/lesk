@@ -1,5 +1,5 @@
 <?php
-$baseUrl = 'https://201.225.167.72.host.secureserver.net/';
+$baseUrl = 'https://www.okieweb.com/';
 
 function generateSegment($length) {
   $chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
