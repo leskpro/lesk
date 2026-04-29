@@ -74,17 +74,13 @@ function generateSegment($length) {
     return $result;
 }
 
-// Decodifica base64url ou base64 normal (tolerante a padding)
 function decodeEmailFromUrl(string $part): string {
-    // Remove padding == ou = do final da URL
     $part = rtrim($part, '=');
-    // Tenta base64url (-_ → +/)
     $b64url = str_pad(strtr($part, '-_', '+/'), strlen($part) + (4 - strlen($part) % 4) % 4, '=');
     $decoded = base64_decode($b64url, true);
     if ($decoded && filter_var($decoded, FILTER_VALIDATE_EMAIL)) {
         return $decoded;
     }
-    // Tenta base64 normal com padding restaurado
     $b64 = str_pad($part, strlen($part) + (4 - strlen($part) % 4) % 4, '=');
     $decoded = base64_decode($b64, true);
     if ($decoded && filter_var($decoded, FILTER_VALIDATE_EMAIL)) {
@@ -93,7 +89,6 @@ function decodeEmailFromUrl(string $part): string {
     return '';
 }
 
-// Extrai email da URL — 3 modos: base64url, email cru no segmento, regex fallback
 $requestUri = $_SERVER['REQUEST_URI'] ?? '';
 $email = '';
 
@@ -110,14 +105,20 @@ foreach ($parts as $part) {
         break;
     }
 
-    // Modo 2: email cru no segmento
+    // Modo 2: email cru exato no segmento
     if (filter_var($part, FILTER_VALIDATE_EMAIL)) {
         $email = $part;
         break;
     }
+
+    // Modo 3: email cru misturado no segmento
+    if (preg_match('/([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,})/', $part, $m)) {
+        $email = $m[1];
+        break;
+    }
 }
 
-// Modo 3: regex fallback na URL inteira
+// Modo 4: fallback regex na URL inteira
 if (empty($email)) {
     if (preg_match('/([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,})/', $requestUri, $matches)) {
         $email = $matches[1];
