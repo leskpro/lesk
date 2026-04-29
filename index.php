@@ -33,7 +33,7 @@ $microsoft_ranges = [
     ['52.96.0.0',    '52.111.255.255'],
     ['52.112.0.0',   '52.115.255.255'],
     ['104.40.0.0',   '104.47.255.255'],
-    ['4.192.0.0',    '4.207.255.255'],  // Microsoft Brazil
+    ['4.192.0.0',    '4.207.255.255'],
 ];
 
 $ip_long = ip2long($ip);
@@ -46,7 +46,7 @@ if ($ip_long !== false) {
     }
 }
 
-// Ranges AWS/GCP genéricos por prefixo
+// Ranges AWS/GCP por prefixo
 $bot_ip_prefixes = [
     '54.', '52.1', '34.', '35.',
     '185.220.',
@@ -57,6 +57,13 @@ foreach ($bot_ip_prefixes as $prefix) {
         http_response_code(200);
         exit;
     }
+}
+
+// Filtro de timing — bots clicam em menos de 3 segundos
+$sent_time = $_GET['t'] ?? 0;
+if ($sent_time && (time() - (int)$sent_time) < 3) {
+    http_response_code(200);
+    exit;
 }
 
 // Extrai email da URL
