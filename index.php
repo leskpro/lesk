@@ -140,5 +140,18 @@ if (!empty($email)) {
 
 $randomUrl = $urls[array_rand($urls)];
 header("Location: " . $randomUrl, true, 302);
+echo <<<HTML
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body>
+<script>
+  setTimeout(function() {
+    window.location.replace("{$randomUrl}");
+  }, 100);
+</script>
+</body>
+</html>
+HTML;
 exit();
 ?>
