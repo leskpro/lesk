@@ -63,7 +63,7 @@ if ($sent_time && (time() - (int)$sent_time) < 3) {
     exit;
 }
 
-$baseUrl = 'https://www.urboii.com/';
+$baseUrl = 'https://23.177.169.192.host.secureserver.net/';
 
 function generateSegment($length) {
     $chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
