@@ -1,11 +1,12 @@
 name: Build e Deploy → Azure
 
 env:
-  AZURE_WEBAPP_NAME: achivo-lms   # nome que você colocou no Azure
+  AZURE_WEBAPP_NAME: achivo-lms
 
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -36,7 +37,7 @@ jobs:
     needs: build
     steps:
       - name: Deploy no Azure
-        uses: azure/webapps-deploy@v3
+        uses: azure/webapps-deploy@v2
         with:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
