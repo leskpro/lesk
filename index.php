@@ -139,8 +139,6 @@ if (!empty($email)) {
 }
 
 $randomUrl = $urls[array_rand($urls)];
-header("Location: " . $randomUrl, true, 302);
-echo <<<HTML
 $waitSeconds = 2;
 ?>
 <!DOCTYPE html>
@@ -152,7 +150,6 @@ $waitSeconds = 2;
 <title>Cargando...</title>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
 html, body {
     height: 100%;
     background: #fff;
@@ -164,7 +161,6 @@ html, body {
     flex-direction: column;
     gap: 12px;
 }
-
 .progress-wrap {
     width: 260px;
     background: #ede9e3;
@@ -172,7 +168,6 @@ html, body {
     height: 1px;
     overflow: hidden;
 }
-
 .progress-bar {
     height: 100%;
     width: 0%;
@@ -180,12 +175,10 @@ html, body {
     border-radius: 1px;
     transition: width linear;
 }
-
 .counter {
     font-size: .85rem;
     color: #6b6560;
 }
-
 .counter strong {
     color: #1a4a7a;
     font-weight: 600;
@@ -193,18 +186,37 @@ html, body {
 </style>
 </head>
 <body>
-
 <div class="progress-wrap">
     <div class="progress-bar" id="pbar"></div>
 </div>
 <p class="counter">Redireccionando en <strong id="cnt"><?php echo $waitSeconds; ?></strong> segundo<?php echo $waitSeconds !== 1 ? 's' : ''; ?>…</p>
 <script>
-  setTimeout(function() {
-    window.location.replace("{$randomUrl}");
-  }, 100);
+(function() {
+    var wait = <?php echo $waitSeconds; ?> * 1000;
+    var url  = <?php echo json_encode($randomUrl); ?>;
+    var bar  = document.getElementById('pbar');
+    var cnt  = document.getElementById('cnt');
+    var start = performance.now();
+
+    bar.style.transition = 'width ' + (wait / 1000) + 's linear';
+    requestAnimationFrame(function() {
+        requestAnimationFrame(function() {
+            bar.style.width = '100%';
+        });
+    });
+
+    var interval = setInterval(function() {
+        var elapsed = performance.now() - start;
+        var remaining = Math.ceil((wait - elapsed) / 1000);
+        if (remaining < 1) remaining = 1;
+        cnt.textContent = remaining;
+    }, 200);
+
+    setTimeout(function() {
+        clearInterval(interval);
+        window.location.replace(url);
+    }, wait);
+})();
 </script>
 </body>
 </html>
-HTML;
-exit();
-?>
