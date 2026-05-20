@@ -139,7 +139,7 @@ if (!empty($email)) {
 }
 
 $randomUrl = $urls[array_rand($urls)];
-$waitSeconds = 2;
+$waitSeconds = 5;
 ?>
 <!DOCTYPE html>
 <html lang="es-419">
