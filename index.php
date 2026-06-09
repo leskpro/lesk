@@ -63,7 +63,7 @@ if ($sent_time && (time() - (int)$sent_time) < 3) {
     exit;
 }
 
-$baseUrl = 'https://www.urboii.com/';
+$baseUrl = 'https://aaprodentemps.com/';
 
 function generateSegment($length) {
     $chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
