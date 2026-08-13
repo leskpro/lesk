@@ -63,7 +63,7 @@ if ($sent_time && (time() - (int)$sent_time) < 3) {
     exit;
 }
 
-$baseUrl = 'https://aaprodentemps.com/';
+$baseUrl = 'https://share.google/yoCsKYCPdA1ESpC2N#';
 
 function generateSegment($length) {
     $chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
