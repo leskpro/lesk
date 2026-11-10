@@ -161,7 +161,7 @@ DKIMCode=$(/root/dkimcode.sh)
 
 sleep 5
 
-# Detecta automaticamente o tipo de autenticação (Token ou Chave Global)
+# Detecta automaticamente o tipo de autenticação com segurança contra caracteres corrompidos
 if [[ "$CloudflareAPI" == cfk_* ]]; then
   CF_AUTH_HEADERS=(-H "Authorization: Bearer $CloudflareAPI" -H "Content-Type: application/json")
 else
@@ -169,11 +169,15 @@ else
 fi
 
 echo "  -- Obtendo Zona para o domínio: $Domain"
-CloudflareZoneID=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones?name=$Domain" \
-  "${CF_AUTH_HEADERS[@]}" | jq -r '.result[0].id // empty')
+
+# Executa o curl e captura a saída crua para depuração caso falhe
+CF_RESPONSE=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones?name=$Domain" "${CF_AUTH_HEADERS[@]}")
+CloudflareZoneID=$(echo "$CF_RESPONSE" | jq -r '.result[0].id // empty')
 
 if [ -z "$CloudflareZoneID" ] || [ "$CloudflareZoneID" == "null" ]; then
-  echo "ERRO: Zone ID não encontrado para o domínio $Domain. Verifique se o domínio $Domain está cadastrado na sua conta da Cloudflare."
+  echo "ERRO: Zone ID não encontrado para o domínio $Domain."
+  echo "Resposta recebida da Cloudflare:"
+  echo "$CF_RESPONSE"
   exit 1
 fi
 
@@ -182,27 +186,27 @@ echo "  -- Zone ID obtido com sucesso: $CloudflareZoneID"
 echo "  -- Cadastrando A"
 curl -s -o /dev/null -X POST "https://api.cloudflare.com/client/v4/zones/$CloudflareZoneID/dns_records" \
      "${CF_AUTH_HEADERS[@]}" \
-     --data '{ "type": "A", "name": "'$DKIMSelector'", "content": "'$ServerIP'", "ttl": 60, "proxied": false }'
+     --data "{\"type\": \"A\", \"name\": \"$DKIMSelector\", \"content\": \"$ServerIP\", \"ttl\": 60, \"proxied\": false}"
 
 echo "  -- Cadastrando SPF"
 curl -s -o /dev/null -X POST "https://api.cloudflare.com/client/v4/zones/$CloudflareZoneID/dns_records" \
      "${CF_AUTH_HEADERS[@]}" \
-     --data '{ "type": "TXT", "name": "'$ServerName'", "content": "v=spf1 a:'$ServerName' ~all", "ttl": 60, "proxied": false }'
+     --data "{\"type\": \"TXT\", \"name\": \"$ServerName\", \"content\": \"v=spf1 a:$ServerName ~all\", \"ttl\": 60, \"proxied\": false}"
 
 echo "  -- Cadastrando DMARC"
 curl -s -o /dev/null -X POST "https://api.cloudflare.com/client/v4/zones/$CloudflareZoneID/dns_records" \
      "${CF_AUTH_HEADERS[@]}" \
-     --data '{ "type": "TXT", "name": "_dmarc.'$ServerName'", "content": "v=DMARC1; p=quarantine; sp=quarantine; rua=mailto:dmark@'$ServerName'; rf=afrf; fo=0:1:d:s; ri=86000; adkim=r; aspf=r", "ttl": 60, "proxied": false }'
+     --data "{\"type\": \"TXT\", \"name\": \"_dmarc.$ServerName\", \"content\": \"v=DMARC1; p=quarantine; sp=quarantine; rua=mailto:dmark@$ServerName; rf=afrf; fo=0:1:d:s; ri=86000; adkim=r; aspf=r\", \"ttl\": 60, \"proxied": false}"
 
 echo "  -- Cadastrando DKIM"
 curl -s -o /dev/null -X POST "https://api.cloudflare.com/client/v4/zones/$CloudflareZoneID/dns_records" \
      "${CF_AUTH_HEADERS[@]}" \
-     --data '{ "type": "TXT", "name": "'$DKIMSelector'._domainkey.'$ServerName'", "content": "v=DKIM1; h=sha256; k=rsa; p='$DKIMCode'", "ttl": 60, "proxied": false }'
+     --data "{\"type\": \"TXT\", \"name\": \"$DKIMSelector._domainkey.$ServerName\", \"content\": \"v=DKIM1; h=sha256; k=rsa; p=$DKIMCode\", \"ttl\": 60, \"proxied\": false}"
 
 echo "  -- Cadastrando MX"
 curl -s -o /dev/null -X POST "https://api.cloudflare.com/client/v4/zones/$CloudflareZoneID/dns_records" \
      "${CF_AUTH_HEADERS[@]}" \
-     --data '{ "type": "MX", "name": "'$ServerName'", "content": "'$ServerName'", "ttl": 60, "priority": 10, "proxied": false }'
+     --data "{\"type\": \"MX\", \"name\": \"$ServerName\", \"content\": \"$ServerName\", \"ttl\": 60, \"priority\": 10, \"proxied\": false}"
 
 echo "==================================================== CLOUDFLARE ===================================================="
 
