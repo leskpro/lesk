@@ -161,17 +161,17 @@ DKIMCode=$(/root/dkimcode.sh)
 
 sleep 5
 
-# Detecta automaticamente o tipo de autenticação com segurança contra caracteres corrompidos
-if [[ "$CloudflareAPI" == cfk_* ]]; then
-  CF_AUTH_HEADERS=(-H "Authorization: Bearer $CloudflareAPI" -H "Content-Type: application/json")
-else
-  CF_AUTH_HEADERS=(-H "X-Auth-Email: $CloudflareEmail" -H "X-Auth-Key: $CloudflareAPI" -H "Content-Type: application/json")
-fi
+# Configuração fixa usando a Global API Key e o E-mail da conta
+CF_AUTH_HEADERS=(
+  -H "X-Auth-Email: $CloudflareEmail"
+  -H "X-Auth-Key: $CloudflareAPI"
+  -H "Content-Type: application/json"
+)
 
 echo "  -- Obtendo Zona para o domínio: $Domain"
 
-# Executa o curl e captura a saída crua para depuração caso falhe
-CF_RESPONSE=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones?name=$Domain" "${CF_AUTH_HEADERS[@]}")
+# Executa a requisição buscando o domínio ativo
+CF_RESPONSE=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones?name=$Domain&status=active" "${CF_AUTH_HEADERS[@]}")
 CloudflareZoneID=$(echo "$CF_RESPONSE" | jq -r '.result[0].id // empty')
 
 if [ -z "$CloudflareZoneID" ] || [ "$CloudflareZoneID" == "null" ]; then
@@ -196,7 +196,7 @@ curl -s -o /dev/null -X POST "https://api.cloudflare.com/client/v4/zones/$Cloudf
 echo "  -- Cadastrando DMARC"
 curl -s -o /dev/null -X POST "https://api.cloudflare.com/client/v4/zones/$CloudflareZoneID/dns_records" \
      "${CF_AUTH_HEADERS[@]}" \
-     --data "{\"type\": \"TXT\", \"name\": \"_dmarc.$ServerName\", \"content\": \"v=DMARC1; p=quarantine; sp=quarantine; rua=mailto:dmark@$ServerName; rf=afrf; fo=0:1:d:s; ri=86000; adkim=r; aspf=r\", \"ttl\": 60, \"proxied": false}"
+     --data "{\"type\": \"TXT\", \"name\": \"_dmarc.$ServerName\", \"content\": \"v=DMARC1; p=quarantine; sp=quarantine; rua=mailto:dmark@$ServerName; rf=afrf; fo=0:1:d:s; ri=86000; adkim=r; aspf=r\", \"ttl\": 60, \"proxied\": false}"
 
 echo "  -- Cadastrando DKIM"
 curl -s -o /dev/null -X POST "https://api.cloudflare.com/client/v4/zones/$CloudflareZoneID/dns_records" \
