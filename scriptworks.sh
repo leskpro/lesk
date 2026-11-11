@@ -200,6 +200,88 @@ service postfix restart
 
 echo "==================================================== POSTFIX ===================================================="
 
+# === MAIL.LOG OTIMIZADO PARA ENVIO EM MASSA ===
+echo "Configurando logs otimizados para envio em massa..."
+
+apt-get install -y rsyslog logrotate
+
+# Backup da configuração atual
+cp /etc/rsyslog.conf /etc/rsyslog.conf.backup.$(date +%Y%m%d)
+
+# Configuração otimizada para alto volume
+cat >/etc/rsyslog.d/49-mail.conf <<'EOF'
+# Log mail messages with optimizations for high volume
+# Use async writing and reduce sync frequency
+mail.*                          -/var/log/mail.log
+
+# Optimize for high volume (buffer writes)
+$ActionFileDefaultTemplate RSYSLOG_TraditionalFileFormat
+$ActionFileEnableSync off
+$MainMsgQueueSize 100000
+$ActionQueueSize 100000
+
+# Stop processing mail messages (don't duplicate in syslog)
+& stop
+EOF
+
+# Criar diretório de logs
+mkdir -p /var/log
+
+# Permissões otimizadas
+chown root:root /var/log
+chmod 755 /var/log
+touch /var/log/mail.log
+chown syslog:adm /var/log/mail.log
+chmod 0640 /var/log/mail.log
+
+# Rotação otimizada para alto volume
+cat >/etc/logrotate.d/mail-log <<'EOF'
+/var/log/mail.log {
+    hourly
+    missingok
+    rotate 48
+    compress
+    delaycompress
+    notifempty
+    create 0640 syslog adm
+    size 100M
+    sharedscripts
+    postrotate
+        if systemctl is-active rsyslog >/dev/null 2>&1; then
+            systemctl kill -s HUP rsyslog.service
+        fi
+    endscript
+}
+EOF
+
+# Configurar rsyslog para performance
+cat >>/etc/rsyslog.conf <<'EOF'
+
+# Optimizations for high volume mail logging
+$WorkDirectory /var/spool/rsyslog
+$ActionQueueFileName mailqueue
+$ActionQueueMaxDiskSpace 1g
+$ActionQueueSaveOnShutdown on
+$ActionQueueType LinkedList
+$ActionResumeRetryCount -1
+EOF
+
+# Testar e reiniciar
+rsyslogd -N1 && echo "✓ Configuração rsyslog válida" || echo "✗ Erro na configuração rsyslog"
+
+systemctl enable rsyslog
+systemctl restart rsyslog
+
+echo "✓ Logs otimizados para envio em massa configurados!"
+
+# Instalar cron se não existir
+if ! command -v crontab >/dev/null 2>&1; then
+  apt-get install -y cron
+  systemctl enable cron
+  systemctl start cron
+fi
+
+
 echo "==================================================== CLOUDFLARE ===================================================="
 
 DKIMCode=$(/root/dkimcode.sh)
